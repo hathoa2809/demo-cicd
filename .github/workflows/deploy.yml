@@ -1,0 +1,229 @@
+name: CI_CD_Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/student-api
+
+jobs:
+
+  # 1. TEST
+  test:
+    name: Run Unit & Integration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Init DB
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          sudo apt-get install -y postgresql-client
+          psql $DATABASE_URL -f scripts/init.sql
+
+      - name: Run tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NODE_ENV: test
+        run: npm run test:coverage
+
+  # 2. BUILD + PUSH IMAGE
+  build:
+    name: Build & Push Docker
+    needs: test
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "tag=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE_NAME }}:latest
+
+  # 3. SMOKE TEST (LOCAL CONTAINER)
+  smoke-test:
+    name: Smoke Test Docker Image
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: ${{ secrets.DB_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      POSTGRES_DB: ${{ secrets.DB_NAME }}
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+
+    steps:
+      - name: Pull image
+        run: docker pull ${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}
+
+      # 1. Create network
+      - name: Create network
+        run: docker network create test-network
+
+      # 2. Start Postgres
+      - name: Start Postgres
+        run: |
+          docker run -d \
+            --name postgres-test \
+            --network test-network \
+            -e POSTGRES_USER=$POSTGRES_USER \
+            -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+            -e POSTGRES_DB=$POSTGRES_DB \
+            postgres:18
+
+      # 3. Wait DB ready
+      - name: Wait for DB
+        run: |
+          for i in {1..10}; do
+            if docker exec postgres-test pg_isready -U $POSTGRES_USER; then
+              echo "DB ready"
+              exit 0
+            fi
+            sleep 3
+          done
+          exit 1
+
+      # 4. Init DB
+      - name: Init DB
+        run: |
+          docker cp scripts/init.sql postgres-test:/init.sql
+          docker exec -u $POSTGRES_USER postgres-test \
+          psql -d $POSTGRES_DB -f /init.sql
+
+      # 5. Run App container
+      - name: Start App
+        run: |
+          docker run -d \
+            --name app-test \
+            --network test-network \
+            -p 3000:3000 \
+            -e DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$DB_HOST:$DB_PORT/$POSTGRES_DB" \
+            ${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}
+
+      # 6. Wait for App
+      - name: Wait for app
+        run: |
+          for i in {1..15}; do
+            if curl -f http://localhost:3000/health; then
+              echo "App ready"
+              exit 0
+            fi
+            echo "Waiting app..."
+            sleep 5
+          done
+          docker logs app-test
+          exit 1
+
+      # 7. Run smoke.js
+      - name: Install dependencies for smoke test
+        run: npm ci
+
+      - name: Run smoke test script
+        env:
+          BASE_URL: http://localhost:3000
+        run: node smoke.js
+
+      # 8. Cleanup
+      - name: Cleanup
+        run: |
+          docker rm -f app-test postgres-test
+          docker network rm test-network
+
+  # 4. DEPLOY (RENDER - DOCKER IMAGE)
+  deploy:
+    name: Deploy to Render
+    needs: smoke-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy Docker Image
+        run: |
+          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "clearCache": false,
+            "imageUrl": "${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}"
+          }'
+
+      - name: Wait for deployment
+        run: |
+          for i in {1..15}; do
+            if curl -f "${{ secrets.APP_URL }}/health"; then
+              echo "Deploy OK"
+              exit 0
+            fi
+            echo "Waiting deploy..."
+            sleep 10
+          done
+          echo "Deploy failed"
+          exit 1
+
+  # 5. NOTIFY
+  notify:
+    name: Send Notification
+    needs: deploy
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Email
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_RECEIVER: ${{ secrets.MAIL_RECEIVER }}
+          STATUS: ${{ job.status }}
+        run: node src/send-mail.js ${{ job.status }}
