@@ -8,14 +8,14 @@ npm test
 
 **CI/CD** bao gồm kiểm thử tự động, đóng gói Container và triển khai liên tục
 
-## 🛠 Công nghệ sử dụng
+## Công nghệ sử dụng
 - **Backend:** Node.js, Express.js
 - **Database:** PostgreSQL
 - **Testing:** Jest, Supertest
 - **DevOps:** Docker, GitHub Actions
 - **Cloud:** Render, Docker Hub
 
-## 🏗 Quy trình CI/CD (Pipeline)
+## Quy trình CI/CD (Pipeline)
 Hệ thống tự động thực hiện các bước sau mỗi khi có mã nguồn mới được đẩy lên nhánh `main`:
 
 1.  **Chất lượng mã nguồn (Quality Check):**
@@ -29,17 +29,17 @@ Hệ thống tự động thực hiện các bước sau mỗi khi có mã ngu�
     *   Gửi tín hiệu (Webhook) tới **Render.com**.
     *   Render tự động kéo Image mới nhất và cập nhật ứng dụng.
 
-## 🚀 Hướng dẫn chạy dưới máy Local (Development)
+## Hướng dẫn chạy dưới máy Local
 
 ### 1. Yêu cầu hệ thống
 - Node.js v20+
-- Docker & Docker Compose (Nếu muốn chạy DB nhanh)
+- Docker & Docker Compose
 
 ### 2. Cài đặt
 ```bash
 # Clone dự án
-git clone https://github.comYOUR_USERNAME/demo-pro-cicd.git
-cd demo-pro-cicd
+git clone ...
+cd demo-cicd
 
 # Cài đặt thư viện
 npm install
@@ -61,7 +61,7 @@ npm test
 npm run test:coverage
 ```
 
-## 🐳 Triển khai với Docker
+## Triển khai với Docker
 ```bash
 # Build image
 docker build -t student-api .
@@ -70,11 +70,11 @@ docker build -t student-api .
 docker run -p 3000:3000 --env-file .env student-api
 ```
 
-## 📋 Cấu hình GitHub Secrets cần thiết
+## Cấu hình GitHub Secrets cần thiết
 Để Pipeline chạy thành công, cần cấu hình các biến sau trong phần **Settings > Secrets**:
 - `DOCKER_USERNAME`: Tài khoản Docker Hub.
 - `DOCKER_PASSWORD`: Personal Access Token của Docker Hub.
-- `RENDER_DEPLOY_HOOK_URL`: URL lấy từ phần Deploy Hook trên Render.
+- ...
 
 ---
-© 2026 - Demo Project for Students
+© 2026 - Demo CICD
