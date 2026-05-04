@@ -11,10 +11,13 @@ module.exports = (app) => {
         timestamp: new Date().toISOString()
       });
     } catch (err) {
+      console.error('DB ERROR:', err);
+
       res.status(500).json({
         status: 'DOWN',
         database: 'DISCONNECTED',
-        error: err.message
+        error: err.message || err,
+        stack: err.stack 
       });
     }
   });

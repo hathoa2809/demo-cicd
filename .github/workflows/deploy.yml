@@ -253,6 +253,9 @@ jobs:
             echo "Timeout waiting deploy"
             exit 1
 
+      - name: Debug health URL
+        run: echo "HealthURL=${{ secrets.APP_URL }}/health"
+
       - name: Health check
         run: |
             for i in {1..10}; do
