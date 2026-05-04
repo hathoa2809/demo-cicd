@@ -209,7 +209,8 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
           -H "Content-Type: application/json" \
           -d '{
-            "clearCache": false,
+            "clearCache": "do_not_clear",
+            "deployMode": "deploy_only"
             "imageUrl": "${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}"
           }'
 
