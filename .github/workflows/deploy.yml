@@ -205,7 +205,7 @@ jobs:
     steps:
       - name: Debug tag
         run: echo "TAG=${{ needs.build.outputs.image_tag }}"
-        
+
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y jq curl
 
@@ -216,7 +216,6 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
-                "clearCache": "do_not_clear",
                 "imageUrl": "${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}"
             }')
 
