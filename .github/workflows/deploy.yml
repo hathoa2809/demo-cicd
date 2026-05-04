@@ -199,7 +199,7 @@ jobs:
   # 4. DEPLOY (RENDER - DOCKER IMAGE)
   deploy:
     name: Deploy to Render
-    needs: smoke-test
+    needs: [build,smoke-test]
     runs-on: ubuntu-latest
 
     steps:
