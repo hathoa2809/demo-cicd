@@ -116,6 +116,9 @@ jobs:
       DB_PORT: 5432
 
     steps:
+      - name: Checkout code 
+        uses: actions/checkout@v4
+
       - name: Pull image
         run: docker pull ${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}
 
@@ -150,7 +153,7 @@ jobs:
       - name: Init DB
         run: |
           docker cp scripts/init.sql postgres-test:/init.sql
-          docker exec -u $POSTGRES_USER postgres-test \
+          docker exec -u postgres postgres-test \
           psql -d $POSTGRES_DB -f /init.sql
 
       # 5. Run App container
