@@ -45,17 +45,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Wait for DB
+        run: |
+            for i in {1..10}; do
+                if pg_isready -h localhost -p 5432 -U ${{ secrets.DB_USER }}; then
+                    echo "DB ready"
+                exit 0
+            fi
+            echo "Waiting DB..."
+            sleep 3
+            done
+            exit 1
+
       - name: Init DB
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           sudo apt-get install -y postgresql-client
-          psql $DATABASE_URL -f scripts/init.sql
+          psql postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }} -f scripts/init.sql
 
       - name: Run tests
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NODE_ENV: test
+            DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}
+            NODE_ENV: test
         run: npm run test:coverage
 
   # 2. BUILD + PUSH IMAGE
