@@ -5,7 +5,7 @@ async function sendEmail() {
     const status = process.argv[2];
     const transporter = nodemailer.createTransport({
         host: process.env.MAIL_HOST, 
-        port: 587,
+        port: 2525,
         secure: false,  
         auth: { 
             user: process.env.MAIL_USERNAME, 
@@ -27,9 +27,12 @@ async function sendEmail() {
     };
 
     try {
-        await transporter.sendMail(mailOptions);
-    } catch (err) { 
-        process.exit(1); 
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Email sent:', info.response);
+        process.exit(0);
+    } catch (err) {
+        console.error('SEND MAIL ERROR:', err);
+        process.exit(1);
     }
 }
 sendEmail();
