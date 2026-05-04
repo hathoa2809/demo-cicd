@@ -34,10 +34,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -79,7 +79,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set image tag
         id: meta
@@ -117,7 +117,7 @@ jobs:
 
     steps:
       - name: Checkout code 
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Pull image
         run: docker pull ${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }}
@@ -153,8 +153,8 @@ jobs:
       - name: Init DB
         run: |
           docker cp scripts/init.sql postgres-test:/init.sql
-          docker exec -u postgres postgres-test \
-          psql -d $POSTGRES_DB -f /init.sql
+          docker exec -u $POSTGRES_USER postgres-test \
+          psql -U $POSTGRES_USER -d $POSTGRES_DB -f /init.sql
 
       # 5. Run App container
       - name: Start App
