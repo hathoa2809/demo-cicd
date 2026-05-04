@@ -288,9 +288,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Send Email
         env:
+          MAIL_HOST: ${{ secrets.MAIL_HOST }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           MAIL_RECEIVER: ${{ secrets.MAIL_RECEIVER }}
