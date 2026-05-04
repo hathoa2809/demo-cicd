@@ -199,10 +199,13 @@ jobs:
   # 4. DEPLOY (RENDER - DOCKER IMAGE)
   deploy:
     name: Deploy to Render
-    needs: smoke-test
+    needs: [build, smoke-test]
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug tag
+        run: echo "TAG=${{ needs.build.outputs.image_tag }}"
+        
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y jq curl
 
