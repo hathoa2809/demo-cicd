@@ -10,6 +10,7 @@ concurrency:
 
 env:
   IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/student-api
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
 
 jobs:
 
@@ -153,7 +154,7 @@ jobs:
       - name: Init DB
         run: |
           docker cp scripts/init.sql postgres-test:/init.sql
-          docker exec -u $POSTGRES_USER postgres-test \
+          docker exec postgres-test \
           psql -U $POSTGRES_USER -d $POSTGRES_DB -f /init.sql
 
       # 5. Run App container
