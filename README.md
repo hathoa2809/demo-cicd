@@ -74,7 +74,7 @@ docker run -p 3000:3000 --env-file .env student-api
 Để Pipeline chạy thành công, cần cấu hình các biến sau trong phần **Settings > Secrets**:
 - `DOCKER_USERNAME`: Tài khoản Docker Hub.
 - `DOCKER_PASSWORD`: Personal Access Token của Docker Hub.
-- ...
+- .....
 
 ---
 © 2026 - Demo CICD
