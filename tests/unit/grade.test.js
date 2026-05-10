@@ -3,7 +3,7 @@ const { calculateStatus } = require('../../src/services/grade.js');
 describe('calculateStatus', () => {
     test('should return PASSED when score is >= 5', () => {
         expect(calculateStatus(5)).toBe('PASSED');
-        expect(calculateStatus(8.5)).toBe('PASSED');
+        expect(calculateStatus(8.25)).toBe('PASSED');
         expect(calculateStatus("7")).toBe('PASSED');
     });
 
