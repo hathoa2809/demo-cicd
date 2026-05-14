@@ -78,3 +78,7 @@ docker run -p 3000:3000 --env-file .env student-api
 
 ---
 © 2026 - Demo CICD
+
+postgresql://school_db:YPHNSYKYHYtHjdCddnAJL9EWnp6nSFAU@dpg-d7rsde8sfn5c73cfogg0-a/school_db_3bup
+
+postgresql://school_db:YPHNSYKYHYtHjdCddnAJL9EWnp6nSFAU@dpg-d7rsde8sfn5c73cfogg0-a.singapore-postgres.render.com/school_db_3bup
